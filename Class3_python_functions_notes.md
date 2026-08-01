@@ -646,3 +646,338 @@ type(a)   # -> <class 'int'>
 - **Database connections** — SQL, NoSQL, Graph, Vector databases (FAISS, ChromaDB, Pinecone, Weaviate) — *(≈ 2 days)*
 - **Python project** deployed on **AWS** — *(≈ 1 day)*
 - Only after this foundation: agentic systems, RAG, LangGraph/LangChain, "vibe coding" best practices
+
+# Python Decorators
+
+We've already talked about **inner functions**, and we're going to use inner functions inside decorators — that's why the topic was kept open until now. Now it's time to talk about decorators.
+
+File used: `deco.py`
+
+---
+
+## Step 1: A Simple Function (No Decorator Yet)
+
+Let's understand *why* we need decorators before writing one.
+
+We start with a simple `divide` function:
+
+```python
+def divide(a, b):
+    return a / b
+
+result = divide(4, 2)
+print(result)
+```
+
+Run it:
+
+```
+python deco.py
+```
+
+Output:
+
+```
+2.0
+```
+
+Nothing much — we just wrote a simple function, called it, and printed the result.
+
+---
+
+## Step 2: The Problem — Order of Arguments
+
+Now let's add a twist. If we call `divide(2, 4)`, it will print `0.5`, because the numerator (2) gets divided by the denominator (4).
+
+**Goal:** No matter what order the values are passed in — `divide(4, 2)` or `divide(2, 4)` — the result should always be the bigger number divided by the smaller number (i.e., always `4 / 2`).
+
+**Logic:** Inside `divide`, check if the first value is less than the second value. If so, swap them.
+
+Swapping in Python:
+
+```python
+a, b = b, a
+```
+
+Then divide the bigger number by the smaller number. So if we make this change directly inside `divide`, it works.
+
+Problem solved, right? We *could* end the video here without decorators. But no — we need to talk about decorators.
+
+---
+
+## Step 3: The Same Problem Appears Again (Subtraction)
+
+To make the case for decorators, let's create another function: `sub`, for subtraction.
+
+```python
+def sub(a, b):
+    return a - b
+
+result_one = divide(4, 2)
+result_two = sub(2, 4)
+print(result_one)
+print(result_two)
+```
+
+If you run this, it prints `-2` (or `-2.0`), because we did the swapping logic only inside `divide`, not inside `sub`. But we're "greedy" — we want the same "bigger minus smaller" behavior for `sub` too.
+
+You might say: "It's simple, just copy the swap logic and paste it into `sub` as well." And that works — now both `sub` and `divide` always operate on the bigger number first, then the smaller number, regardless of the order you pass them in.
+
+**But now notice:** this swapping logic is *common* to both functions. We want to remove this common logic from each function and keep it somewhere else — then just tell each function to "use that feature." This is exactly where **decorators** come in.
+
+---
+
+## Step 4: Creating Your First Decorator
+
+We create a decorator called `greater_first`:
+
+```python
+def greater_first():
+    pass
+```
+
+At this point we just write `pass` so it doesn't throw an error while we build it up.
+
+To *use* a decorator, you place the `@` symbol on top of the method you want to modify. You'll see this pattern a lot once you start working with Python frameworks — you use `@some_decorator` above a function to apply that feature.
+
+```python
+@greater_first
+def divide(a, b):
+    return a / b
+
+@greater_first
+def sub(a, b):
+    return a - b
+```
+
+But `greater_first` isn't doing anything yet, so if you try to run this:
+
+- First error: `greater_first() takes 0 positional arguments but 1 was given`
+  - This happens because Python automatically passes the decorated function into the decorator. So the decorator needs to accept that function as a parameter:
+
+```python
+def greater_first(func):
+    pass
+```
+
+- Next error: `NoneType object is not callable`
+  - This means the decorator needs to `return` something (a callable), not `None`:
+
+```python
+def greater_first(func):
+    return
+```
+
+### How a decorator actually works
+
+A decorator **takes a function** as a parameter and **returns the same function** (with some added behavior/modification). You can't just `return func` as-is, though — that achieves nothing beyond the original behavior.
+
+To actually change behavior, you create an **inner function** inside the decorator (this is why inner functions were covered earlier). The outer function is the decorator; inside it, we define an inner function commonly named `wrap` (since we're "wrapping" the behavior):
+
+```python
+def greater_first(func):
+    def wrap(a, b):
+        if a < b:
+            a, b = b, a
+        return func(a, b)
+    return wrap
+```
+
+Explanation:
+- `wrap` takes the **same parameters** as the function being decorated.
+- Inside `wrap`, we do the swap logic: if `a` is less than `b`, swap them.
+- Then we call the original function (`func`) with the (possibly swapped) values, and return that result.
+- The decorator itself returns `wrap` — **not** the same function unmodified.
+
+Why "new values"? Because if you pass `4, 2` (already in order), the same values get passed through. But if you pass `2, 4`, it gets passed through as `4, 2` after swapping.
+
+Run it, and it works — both results print as `2` and `2` (regardless of the order arguments were passed).
+
+---
+
+## Step 5: Understanding How the Decorator Really Works
+
+To understand what's happening under the hood, let's rewrite it **without** the `@` syntax, using explicit reassignment instead:
+
+```python
+sub = greater_first(sub)
+```
+
+What's happening:
+- We take the `sub` function and apply the decorator to it, reassigning `sub` to the *new*, decorated version.
+- Inside `greater_first`, `sub` is accepted as `func` (the function parameter).
+- Calling `greater_first(sub)` returns `wrap` — but `wrap` itself isn't called yet at this point.
+- `wrap` only actually executes when you later call `sub(...)` — that call now goes to `wrap`, which applies your condition/logic and then calls the original function (`func`) with the (possibly swapped) values, executing it and returning the value.
+
+So: whatever function you pass into the decorator, when you call it, you're really calling `wrap`, which does its logic and then calls the original function.
+
+Do the same thing for `divide`:
+
+```python
+divide = greater_first(divide)
+```
+
+This is **one way** of applying a decorator (manual reassignment). The **second way** — the one done earlier — is using the `@` syntax:
+
+```python
+@greater_first
+def divide(a, b):
+    ...
+```
+
+Run it — it still works. So you can use either approach, but the **modern/preferred way** is the `@decorator` syntax placed directly on top of your method to add the wrapper/behavior. (The manual reassignment line can be commented out/removed since it's no longer needed — the `@` decorator already does the job.)
+
+After making these changes, it still works exactly as before.
+
+---
+
+## Step 6: Decorators Aren't Just for Swapping — Example: Logging
+
+Decorators aren't limited to something like swapping two numbers — you can use them for any logic you want. For example: maintaining a **log**.
+
+Let's create another decorator called `log_deco`:
+
+```python
+def log_deco(func):
+    def wrap(a, b):
+        print("Values I'm receiving:", a, ", ", b)
+        result = func(a, b)
+        print("Result of this operation:", result)
+        return result
+    return wrap
+```
+
+Notes on this decorator:
+- It takes a function (`func`) just like any decorator.
+- It has its own inner function `wrap(a, b)`.
+- Inside `wrap`, we print the incoming values (`a`, `b`) — you could also use string formatting here if preferred, and optionally print the function name too.
+- We call the function and store the result, then print the result.
+- Since the result was already computed, we **return the same result** rather than calling the function a second time.
+- Finally, the decorator returns `wrap`.
+
+To actually apply it, add `@log_deco` on top of the target function:
+
+```python
+@log_deco
+def sub(a, b):
+    return a - b
+```
+
+If you only add `@log_deco` to `sub`, logging will only happen for `sub`.
+
+If you also add it to `divide`:
+
+```python
+@log_deco
+def divide(a, b):
+    return a / b
+```
+
+...then, using different values (e.g., `8` and `20` for divide) helps you tell which log output belongs to which function — since `divide` is called first, its log appears first with values `8` and `20`, followed by its result. Then `sub`'s log appears with its own values and result.
+
+*(Note: normally, you wouldn't print logs to the console — you'd write them to a file instead.)*
+
+---
+
+## Step 7: A Third Function — `add` (Only Some Decorators Apply)
+
+Let's create one more function, `add`:
+
+```python
+def add(a, b):
+    return a + b
+
+result_three = add(4, 7)
+print(result_three)
+```
+
+Running this, the output for `add` doesn't go through `greater_first` — that decorator is specifically for `divide` and `sub`, not for `add`. But we **do** want logging for `add`. So we can selectively apply just the decorator we want:
+
+```python
+@log_deco
+def add(a, b):
+    return a + b
+```
+
+Run it — now `add` also logs its values and result. This shows you can choose exactly which decorator(s) to apply to which function.
+
+---
+
+## Step 8: What If We Pass Three Values?
+
+Let's extend `add` to accept three values:
+
+```python
+def add(a, b, c):
+    return a + b + c
+
+result_three = add(5, 7, 6)
+```
+
+Will this work? Since `wrap` inside `log_deco` was defined to only accept two parameters (`a, b`), but we're now calling it with three values, we'd expect an error.
+
+Running it confirms this:
+
+```
+TypeError: wrap() takes 2 positional arguments but 3 were given
+```
+
+**Question:** Do you need to create a separate decorator for three values? What about five values? Ten values? This brings us back to the earlier topic of **variable-length arguments** (`*args`).
+
+---
+
+## Step 9: Fixing It with `*args`
+
+Instead of hardcoding `a, b` in `wrap`, use `*args` to accept **any number of positional arguments**:
+
+```python
+def log_deco(func):
+    def wrap(*args):
+        print("Values I'm receiving:", args)
+        result = func(*args)
+        print("Result of this operation:", result)
+        return result
+    return wrap
+```
+
+- `wrap(*args)` accepts however many values you pass.
+- Print `args` instead of individual `a, b`.
+- When calling the function, pass `*args` through instead of individual `a, b`.
+
+Try it — it works. No matter how many values you pass, they're treated as a **tuple**.
+
+This is how you'd normally define a decorator in practice. (Note: the same `*args` update should ideally be made to `greater_first` too, but that would require changing more of its swap logic — left as an exercise for the viewer to do.)
+
+---
+
+## Step 10: What About Keyword Arguments?
+
+What if you pass a **keyword argument** instead of a plain positional value? With only `*args`, that would break, since keyword arguments aren't captured by `*args` alone.
+
+To be safe and make the decorator fully generic, accept both positional and keyword arguments:
+
+```python
+def log_deco(func):
+    def wrap(*args, **kwargs):
+        print("Values I'm receiving:", args, kwargs)
+        result = func(*args, **kwargs)
+        print("Result of this operation:", result)
+        return result
+    return wrap
+```
+
+Even if you're not going to use keyword arguments right now, it's good practice to include `**kwargs` so the decorator works generically for **any** function — regardless of whether it uses normal positional parameters or keyword parameters.
+
+---
+
+## Summary
+
+- A **decorator** is a function that takes another function as input and returns a modified version of it (usually via an inner function, commonly named `wrap`).
+- The `@decorator_name` syntax placed above a function definition is equivalent to writing `func = decorator_name(func)`.
+- Decorators let you extract **common logic** (like argument-order swapping, or logging) out of multiple functions and apply it selectively wherever needed.
+- Using `*args` and `**kwargs` in the inner `wrap` function makes decorators generic enough to work with functions that take any number of positional or keyword arguments.
+- In this lesson, two decorators were built:
+  - `greater_first` — ensures the bigger number always comes first (used with `divide` and `sub`).
+  - `log_deco` — logs the input values and the result of any function it's applied to (used with `sub`, `divide`, and `add`).
+
+That's the end of the topic on decorators. Hope it made sense!
