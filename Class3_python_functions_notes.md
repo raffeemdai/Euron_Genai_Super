@@ -4,6 +4,10 @@
 
 *Code below is taken directly from the class notebook (`functioninpython.ipynb`), matched with the instructor's spoken explanation from the transcript.*
 
+
+for decarators refer: https://www.youtube.com/watch?v=vAFl6tvrxOo
+
+
 ---
 
 ## 1. What Is a Function?
