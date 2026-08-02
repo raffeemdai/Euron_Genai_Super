@@ -985,3 +985,439 @@ Even if you're not going to use keyword arguments right now, it's good practice 
   - `log_deco` — logs the input values and the result of any function it's applied to (used with `sub`, `divide`, and `add`).
 
 That's the end of the topic on decorators. Hope it made sense!
+
+
+# Decorators — Notes from `decorators.ipynb`
+
+Source notebook: `Feb26/basics/StandardLibrary/decorators.ipynb`
+
+> **Key idea from the notebook:** Python allows a function to be passed as an argument to another function.
+
+---
+
+## Theory: What Is a Decorator? (Simple Explanation)
+
+from Khaja 
+refer : https://github.com/asquarezone/Python/blob/main/Feb26/basics/StandardLibrary/decorators.ipynb
+
+
+### The simple idea
+
+Imagine you have a plain function, and you want to add some **extra behavior** to it — like printing a log message, checking permissions, measuring how long it takes to run, or validating input — **without changing the original function's code**.
+
+A **decorator** is a way to "wrap" a function inside another function so that the extra behavior runs automatically, before and/or after the original function runs.
+
+Think of it like a **gift wrapper**: the gift (your original function) stays exactly the same inside, but the wrapper (the decorator) adds something extra around it — a ribbon, a card, whatever you want — without touching the gift itself.
+
+### Why decorators are possible in Python
+
+Decorators work because of three core facts about Python functions:
+
+1. **Functions are objects.** A function can be assigned to a variable, passed as an argument, and returned from another function — just like a number or a string.
+2. **Functions can be defined inside other functions.** These are called **inner functions** (or nested functions).
+3. **Inner functions remember variables from their outer function**, even after the outer function has finished running. This is called a **closure**.
+
+A decorator combines all three: it's a function that takes another function as input, defines an inner function that adds new behavior, and returns that inner function.
+
+### The general rule / pattern
+
+Every basic decorator follows this same shape:
+
+```python
+def decorator_name(original_function):      # 1. Takes a function as input
+    def wrapper(*args, **kwargs):            # 2. Defines an inner function
+        # ... code to run BEFORE ...
+        result = original_function(*args, **kwargs)  # 3. Calls the original function
+        # ... code to run AFTER ...
+        return result                         # 4. Returns its result
+    return wrapper                            # 5. Returns the inner function
+```
+
+**Rules to remember when writing a decorator:**
+
+| Rule | Why |
+|---|---|
+| The decorator must accept a function as its parameter. | This is the function being decorated. |
+| The decorator must define an inner function (commonly named `wrapper`, `inner`, or `wrap`). | This is where you add the new behavior. |
+| The inner function should accept `*args, **kwargs`. | So it works with **any** function, regardless of how many arguments it takes. |
+| The inner function should call the original function and (usually) return its result. | So the decorated function still behaves like a normal function and doesn't silently lose its return value. |
+| The decorator must `return` the inner function (not call it). | This is what actually replaces the original function with the "wrapped" version. |
+
+### The `@` syntax (shorthand)
+
+Once you have a decorator function, there are two ways to apply it:
+
+**1. Manual way** (reassigning the function):
+```python
+def my_function():
+    print("Hello")
+
+my_function = decorator_name(my_function)
+```
+
+**2. Shorthand way — the `@` symbol** (this is what people usually mean by "using a decorator"):
+```python
+@decorator_name
+def my_function():
+    print("Hello")
+```
+
+Both do **exactly the same thing**. Writing `@decorator_name` directly above a function definition is just syntactic sugar for `my_function = decorator_name(my_function)`.
+
+### Step-by-step: how Python executes a decorated function
+
+Given:
+```python
+@decorator_name
+def greet():
+    print("Hi!")
+
+greet()
+```
+
+1. Python defines `greet()` as normal.
+2. Because of `@decorator_name`, Python immediately calls `decorator_name(greet)` and reassigns the name `greet` to whatever that call returns (the inner/wrapper function).
+3. When you later call `greet()`, you are actually calling the **wrapper function**, not the original `greet`.
+4. The wrapper runs its "before" code, calls the real original `greet()` internally, then runs its "after" code.
+
+### Quick syntax cheat sheet
+
+```python
+# Basic decorator template
+def my_decorator(func):
+    def wrapper(*args, **kwargs):
+        print("Before the function runs")
+        result = func(*args, **kwargs)
+        print("After the function runs")
+        return result
+    return wrapper
+
+# Applying it
+@my_decorator
+def say_hello(name):
+    print(f"Hello, {name}!")
+
+say_hello("Alice")
+```
+
+**Output:**
+```
+Before the function runs
+Hello, Alice!
+After the function runs
+```
+
+### Common use cases for decorators
+
+- **Logging** — record when a function is called and with what values.
+- **Timing** — measure how long a function takes to execute.
+- **Authentication/permission checks** — verify a user is allowed to run something before it runs.
+- **Caching/memoization** — store results so expensive functions don't need to recompute them.
+- **Validation** — check that arguments are valid before running the real function.
+- **Framework features** — many Python frameworks (like Flask's `@app.route`) use decorators to register or configure functions.
+
+### One-line summary
+
+> A decorator is a function that takes another function, wraps it with extra behavior using an inner function, and returns that wrapper — and the `@` symbol is just a shortcut for applying it.
+
+---
+
+## Cell 1 — A Simple Function
+
+```python
+def say_hello():
+    print("hello")
+```
+
+**Explanation:** This just defines a normal function called `say_hello`. It doesn't do anything until we call it.
+
+---
+
+## Cell 2 — Calling It the Normal Way
+
+```python
+# traditionally to call this function
+
+say_hello()
+```
+
+**Output:**
+```
+hello
+```
+
+**Explanation:** This is the usual, everyday way of calling a function — just write its name followed by `()`.
+
+---
+
+## Cell 3 — Passing a Function as an Argument
+
+```python
+# Python allows function to pass as argument
+
+# this function execute can execute functions
+def execute(func, *args):
+    func(*args)
+```
+
+**Explanation:**
+- In Python, a function is just another value — like a number or a string — so it can be **passed into another function** as an argument.
+- Here, `execute` takes a function (`func`) plus any number of extra positional values (`*args`).
+- Inside, it simply calls whatever function was passed in, forwarding along any arguments it received: `func(*args)`.
+- `*args` means "accept any number of positional arguments and collect them into a tuple."
+
+---
+
+## Cell 4 — Using `execute` to Run `say_hello`
+
+```python
+execute(say_hello)
+```
+
+**Output:**
+```
+hello
+```
+
+**Explanation:** Instead of calling `say_hello()` directly, we hand the function itself (`say_hello`, no parentheses) to `execute`, which then calls it on our behalf. Since `say_hello` takes no arguments, `*args` is empty here, and `execute` just runs `say_hello()`.
+
+---
+
+## Cell 5 — A Function That Takes a Parameter
+
+```python
+def say_hi(name:str):
+    print(f"Hi {name}")
+```
+
+**Explanation:** A function that expects one argument, `name` (type-hinted as a string), and prints a greeting using an f-string.
+
+---
+
+## Cell 6 — Passing Both the Function and Its Argument
+
+```python
+execute(say_hi,"RAM")
+```
+
+**Output:**
+```
+Hi RAM
+```
+
+**Explanation:** Now we pass `say_hi` (the function) **and** `"RAM"` (the argument it needs) into `execute`. Inside `execute`, `func = say_hi` and `args = ("RAM",)`. So `func(*args)` becomes `say_hi("RAM")`, which prints `Hi RAM`.
+
+---
+
+## Cell 7 — A Function That Takes a List
+
+```python
+def say_hi_to_friends(names:list[str]):
+    for name in names:
+        print(f"Hi {name}")
+```
+
+**Explanation:** This function takes a **list of names** and loops through it, printing a greeting for each one.
+
+---
+
+## Cell 8 — Passing a Function That Takes a List
+
+```python
+execute(say_hi_to_friends, ["RAM", "SHYAM"])
+```
+
+**Output:**
+```
+Hi RAM
+Hi SHYAM
+```
+
+**Explanation:** Same idea as before — `execute` receives the function `say_hi_to_friends` and one argument, the list `["RAM", "SHYAM"]`. It then calls `say_hi_to_friends(["RAM", "SHYAM"])`, which loops through and greets both names.
+
+This whole section (Cells 1–8) demonstrates the *first building block* of decorators: **functions can be passed around and called indirectly through other functions.**
+
+---
+
+## Cell 9 — A Function Inside a Function
+
+```python
+# Function can have a function inside it 
+# Fuction can return a function
+def outer():
+    def inner():
+        print("inside inner function")
+    return inner
+```
+
+**Explanation:**
+- Just like you can define a function inside a function (an **inner function**), a function can also **return** another function.
+- Here, `outer()` defines `inner()` inside itself, and instead of calling `inner()`, it **returns** the `inner` function itself (not its result).
+
+---
+
+## Cell 10 — Calling the Returned Inner Function
+
+```python
+result = outer()
+result()
+```
+
+**Output:**
+```
+inside inner function
+```
+
+**Explanation:**
+- `outer()` runs and returns the `inner` function — this gets stored in `result`. At this point, `result` **is** the `inner` function (not yet executed).
+- `result()` then actually calls it, which prints `inside inner function`.
+
+---
+
+## Cell 11 — Inner Functions Can Access Outer Variables
+
+```python
+# inner functions have access to outer function variables
+def outer():
+    message = "Hello from outer"
+    def inner():
+        print(message)
+    return inner
+```
+
+**Explanation:** This shows a key property of inner functions: they can "see" and use variables defined in their outer function, even after `outer()` has finished running. Here, `inner()` uses `message`, a variable defined inside `outer()`.
+
+---
+
+## Cell 12 — Running It
+
+```python
+result = outer()
+result()
+```
+
+**Output:**
+```
+Hello from outer
+```
+
+**Explanation:** Same pattern as Cell 10: `outer()` returns `inner`, we store it in `result`, and calling `result()` prints the `message` variable that `inner` remembered from `outer`'s scope. This "remembering" behavior is called a **closure**.
+
+---
+
+## Cell 13 — Building the `logger` Decorator
+
+```python
+def logger(func, *args, **kwargs):
+    def inner():
+        print(f"Before function {func.__name__}")
+        func(*args, **kwargs)
+        print(f"After function {func.__name__}")
+    return inner
+```
+
+**Explanation:** This is where everything comes together to build a **decorator**.
+- `logger` takes a function `func`, plus any positional args (`*args`) and keyword args (`**kwargs`) that `func` might need.
+- Inside `logger`, we define an inner function `inner()`. This inner function:
+  1. Prints a "Before" message, showing the name of the function about to run (`func.__name__`).
+  2. Calls the original function with its arguments: `func(*args, **kwargs)`.
+  3. Prints an "After" message once it's done.
+- `logger` then **returns** `inner` — not the result of running it, but the function itself, ready to be called later.
+- This is the same "function returns a function" pattern from Cells 9–12, just now used to **wrap extra behavior (logging) around another function.**
+
+---
+
+## Cell 14 — Using `logger` on `say_hi`
+
+```python
+greet = logger(say_hi, "RAM")
+greet()
+```
+
+**Output:**
+```
+Before function say_hi
+Hi RAM
+After function say_hi
+```
+
+**Explanation:**
+- `logger(say_hi, "RAM")` doesn't run `say_hi` immediately. Instead, `func` becomes `say_hi` and `args` becomes `("RAM",)` inside `logger`, and `logger` returns the `inner` function — which gets stored in `greet`.
+- Calling `greet()` is what actually triggers everything: it prints "Before function say_hi", then runs `say_hi("RAM")` (printing `Hi RAM`), then prints "After function say_hi".
+- So `greet` is really `say_hi`, but now "wrapped" with logging behavior before and after it runs.
+
+---
+
+## Cell 15 — Using `logger` on `say_hi_to_friends`
+
+```python
+greet = logger(say_hi_to_friends, ["RAM", "SHYAM"])
+greet()
+```
+
+**Output:**
+```
+Before function say_hi_to_friends
+Hi RAM
+Hi SHYAM
+After function say_hi_to_friends
+```
+
+**Explanation:** Same idea, but this time `func = say_hi_to_friends` and `args = (["RAM", "SHYAM"],)`. Calling `greet()` prints the "Before" message, then loops through and greets both names, then prints the "After" message. This proves `logger` works generically with **any** function, not just one specific one.
+
+---
+
+## Cell 16 — The Decorator Shorthand: `@logger`
+
+```python
+# the logger function is a decorator which comes with short hand syntax
+# decorators add additional funcitonality
+# decorator is a functon inside a function
+@logger
+def greet_myself():
+    print("Hello to myself")
+```
+
+**Explanation:**
+- Manually writing `greet = logger(some_func)` every time (like in Cells 14–15) works, but Python gives us a cleaner shortcut: the `@` symbol.
+- Placing `@logger` directly above a function definition is exactly equivalent to writing:
+  ```python
+  def greet_myself():
+      print("Hello to myself")
+  greet_myself = logger(greet_myself)
+  ```
+- In other words, `greet_myself` is automatically replaced by the `inner` function returned from `logger(greet_myself)`. So whenever you call `greet_myself()` from now on, you're really calling `logger`'s `inner()`, which adds the "Before"/"After" print statements around the original function.
+- As the notebook's comment says: **a decorator adds additional functionality to a function**, and internally, **a decorator is just a function inside a function** (the outer/inner pattern from Cells 9–13).
+
+---
+
+## Cell 17 — Calling the Decorated Function
+
+```python
+greet_myself()
+```
+
+**Output:**
+```
+Before function greet_myself
+Hello to myself
+After function greet_myself
+```
+
+**Explanation:** Because `greet_myself` was decorated with `@logger`, simply calling `greet_myself()` now automatically:
+1. Prints "Before function greet_myself"
+2. Runs the original code inside `greet_myself` (`print("Hello to myself")`)
+3. Prints "After function greet_myself"
+
+No extra code was needed at the call site — the logging behavior was "attached" to the function just by adding `@logger` above its definition.
+
+---
+
+## Overall Summary
+
+The notebook builds up to decorators in four stages:
+
+1. **Cells 1–8:** Functions are just values in Python — they can be passed as arguments to other functions and called indirectly (`execute(func, *args)`).
+2. **Cells 9–12:** A function can define another function inside it (an inner function) and **return** that inner function. The inner function keeps access to variables from its outer function (a closure).
+3. **Cells 13–15:** Combining both ideas — a function (`logger`) takes another function as an argument, wraps it inside an inner function that adds "before" and "after" behavior, and returns that inner function so it can be called later.
+4. **Cells 16–17:** The `@decorator_name` syntax is just a shortcut for `func = decorator_name(func)`. It lets you attach extra behavior (like logging) to any function without changing that function's own code — this is what a **decorator** is.
