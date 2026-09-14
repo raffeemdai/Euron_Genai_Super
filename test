@@ -1,0 +1,1060 @@
+Database → MongoDB → Vector DB → RAG --- Simple Class Notes
+Style: These are practical notes from the class, written like a story so the flow is easy to remember.
+Source: Uploaded class transcript.
+1. Where the class starts
+The previous class was mainly about SQL databases.
+The idea was simple:
+Application → API → Database
+The application sends a request through an API, and the API talks to the database. We can then insert, read, update, or delete data.
+This class says: SQL is not the only type of database we need.
+As we start building real applications, especially AI applications, we will meet different kinds of databases.
+The class focuses on two important ones:
+MongoDB → NoSQL / document-based database
+Vector Database → useful for AI, semantic search and RAG
+The vector database used in the class is called Qdrant (the transcript sometimes says "Quadrant").
+2. First stop: MongoDB
+Imagine SQL like a neatly organized Excel sheet.
+You have:
+rows
+columns
+column names
+data types
+a defined schema
+MongoDB works differently.
+MongoDB is a document-based database.
+Instead of thinking mainly in rows and columns, think:
+"I have a document containing key-value information."
+For example:
+{
+    "id": 1,
+    "name": "Anju Kumar",
+    "age": 30,
+    "grade": "A",
+    "email": "example@email.com",
+    "skills": ["Python", "MongoDB"]
+}
+This looks very similar to a Python dictionary.
+That is the important mental model.
+3. MongoDB structure --- keep this picture in your head
+Think about the hierarchy like this:
+MongoDB
+   ↓
+Database
+   ↓
+Collection
+   ↓
+Documents
+The class compares it with SQL:
+SQL                         MongoDB
+------------------------------------------------
+Database                    Database
+Table                       Collection
+Row                         Document
+Column/value                Key/value
+The teacher specifically says collection is similar/equivalent to a table for understanding, but it is not exactly the same thing.
+A MongoDB collection is flexible because documents do not have to look exactly identical.
+4. Why MongoDB is flexible
+This is the main reason the class is introducing MongoDB.
+Suppose today we store:
+id
+name
+age
+grade
+email
+Tomorrow we decide that one document should also contain:
+project
+We can store it.
+We don't have to think in the same rigid table-schema way as a traditional SQL table.
+For example:
+{
+    "id": 2,
+    "name": "Rahul",
+    "age": 27,
+    "project": "AI Chatbot"
+}
+Another document could contain different information.
+So the big idea is:
+MongoDB gives us flexibility in the structure of the data.
+The transcript connects this idea with databases such as:
+MongoDB
+Cassandra
+HBase
+5. Connecting Python to MongoDB
+The class already created the MongoDB connection earlier.
+The basic flow is:
+MongoDB Cluster
+      ↓
+Connection String
+      ↓
+Python / VS Code
+      ↓
+MongoDB Client
+      ↓
+Database
+      ↓
+Collection
+The connection string is basically the bridge that lets Python communicate with MongoDB.
+The class creates a client and then selects a database and collection.
+Conceptually:
+client = MongoClient(CONNECTION_STRING)
+
+db = client["my_database"]
+
+collection = db["student"]
+Now collection becomes the object through which we work with the data.
+6. Insert one document
+Suppose we have one student.
+We can insert one document:
+collection.insert_one({
+    "id": 1,
+    "name": "Anju Kumar",
+    "age": 30,
+    "grade": "A",
+    "email": "example@email.com",
+    "skills": ["Python", "MongoDB"]
+})
+Think about what happened:
+We created a Python dictionary.
+We gave it student information.
+We passed it to insert_one().
+MongoDB stored it inside the collection.
+Very simple.
+Remember
+insert_one() → one document
+7. Duplicate key error --- what happened in class?
+The class tried inserting another document with the same ID.
+MongoDB returned a duplicate key error.
+The simple lesson is:
+If the ID/key is being used as a unique identifier, don't try to insert another document with the same value.
+So the class changed:
+id = 1
+to another ID and inserted the document.
+8. Insert many documents
+What if we have 100 documents?
+We don't want to call insert_one() 100 times manually.
+MongoDB provides:
+collection.insert_many(list_of_documents)
+Example:
+students = [
+    {
+        "id": 1,
+        "name": "Rahul",
+        "age": 27
+    },
+    {
+        "id": 2,
+        "name": "Neha",
+        "age": 25
+    },
+    {
+        "id": 3,
+        "name": "Amit",
+        "age": 30
+    }
+]
+
+collection.insert_many(students)
+The mental picture:
+Python List
+   ↓
+[document1, document2, document3, ...]
+   ↓
+insert_many()
+   ↓
+MongoDB Collection
+Remember
+insert_one()  → one document
+insert_many() → multiple documents
+9. Finding data --- the next step
+Now the data is inside MongoDB.
+Naturally, the next question is:
+"How do I get it back?"
+That's where find() and find_one() come in.
+Find one
+collection.find_one()
+Think:
+"Give me one document."
+Find
+collection.find()
+Think:
+"Give me the matching documents / documents in the collection."
+The class explains this as:
+find_one() → one result
+find()     → multiple results
+10. Filtering data
+Now imagine we don't want everything.
+Suppose we want:
+Give me students whose age is greater than 25.
+MongoDB uses operators for this.
+The class introduces:
+Operator   Meaning
+$gt      greater than $lt      less than $eq      equal to $gte     greater than or equal to $lte     less than or equal to $ne      not equal to
+Example:
+collection.find({
+    "age": {"$gt": 25}
+})
+Meaning:
+Find documents
+where
+age > 25
+11. Easy way to remember MongoDB operators
+Think of the letters:
+GT  → Greater Than
+LT  → Less Than
+EQ  → Equal
+GTE → Greater Than or Equal
+LTE → Less Than or Equal
+NE  → Not Equal
+So if an interviewer asks:
+How do you filter MongoDB documents?
+You can say:
+"We pass a filter condition to find(), using MongoDB comparison operators such as $gt, $lt, $eq, $gte, $lte, and $ne."
+12. Filtering by a normal field
+Filtering doesn't have to be on age.
+We can search by name.
+For example:
+collection.find({
+    "name": "Amit"
+})
+The idea is:
+Find documents
+where name = Amit
+MongoDB then returns the matching document(s).
+13. Updating data
+Now imagine Amit's age changed.
+We don't want to insert a new document.
+We want to update the existing one.
+MongoDB gives us:
+update_one()
+update_many()
+The update operation has two important parts:
+1. Which document(s) should I update?
+2. What should I change?
+For example:
+collection.update_one(
+    {"name": "Amit"},
+    {"$set": {"age": 26}}
+)
+Read it like a sentence:
+Find the document where name is Amit, and set age to 26.
+14. Update many documents
+Now imagine we have many people whose age is below 25.
+We want to make all of them 25.
+The class demonstrates the idea with:
+collection.update_many(
+    {"age": {"$lt": 25}},
+    {"$set": {"age": 25}}
+)
+Read it like a story:
+"Find everybody whose age is less than 25 and change their age to 25."
+This is why update_many() is useful.
+Remember
+update_one()  → update one matching document
+update_many() → update all matching documents
+15. Delete data
+Now we know:
+Insert
+Find
+Update
+The final basic database operation is:
+Delete
+MongoDB provides:
+delete_one()
+delete_many()
+Example:
+collection.delete_one({
+    "name": "Amit"
+})
+Meaning:
+Find a matching document and delete one.
+For multiple documents:
+collection.delete_many({
+    "age": 25
+})
+Meaning:
+Delete all matching documents where age is 25.
+16. MongoDB CRUD --- the important picture
+Everything we did can be remembered as CRUD.
+C → Create → insert
+R → Read   → find
+U → Update → update
+D → Delete → delete
+MongoDB operations from the class:
+insert_one()
+insert_many()
+
+find_one()
+find()
+
+update_one()
+update_many()
+
+delete_one()
+delete_many()
+If you remember this block, you remember the MongoDB part of the class.
+17. Why are we moving from MongoDB to Vector DB?
+Now the class changes direction.
+MongoDB solved one problem:
+How can I store flexible documents?
+But AI applications have another problem:
+How can I search based on meaning?
+This is where a Vector Database comes in.
+18. What is a vector database?
+Imagine I have this sentence:
+"My name is Anshu Kumar. I used to teach in Super 30."
+A normal database stores the text.
+A vector database wants a mathematical representation of the meaning of that text.
+So we do:
+Text
+ ↓
+Embedding Model
+ ↓
+Numbers
+ ↓
+Vector
+ ↓
+Vector Database
+The important word is:
+Embedding
+An embedding converts information such as text into a numerical representation.
+19. Why convert text into numbers?
+Computers ultimately work with numbers.
+The class gives the basic idea:
+English
+Hindi
+Telugu
+Tamil
+Images
+Videos
+Audio
+All of these can eventually be represented mathematically so computers can perform calculations on them.
+For our current topic:
+Sentence
+   ↓
+Embedding Model
+   ↓
+Vector
+The vector contains many numerical values.
+20. Real-world problem: thousands of documents
+Now imagine we work in:
+HR
+Finance
+Legal
+Sales
+Each department may have thousands or hundreds of thousands of documents.
+Suppose HR has:
+Employee policy
+Leave policy
+Insurance policy
+Salary policy
+Performance policy
+Benefits document
+...
+A traditional search system can search for keywords.
+For example:
+"leave policy"
+It searches for those words.
+But AI systems can try to understand the meaning behind a question.
+That's where vector search becomes powerful.
+21. The AI way of searching
+Suppose the user asks:
+"Who is Anshu Kumar?"
+That is normal human language.
+We can convert the question into a vector too.
+User question
+     ↓
+Embedding Model
+     ↓
+Query Vector
+Now we have:
+Stored document vectors
+          +
+Query vector
+          ↓
+Similarity search
+          ↓
+Nearest / most relevant documents
+This is the basic idea behind semantic search.
+22. The important difference
+Traditional keyword search:
+Question
+   ↓
+Look for matching words
+Vector search:
+Question
+   ↓
+Convert question into vector
+   ↓
+Compare with stored vectors
+   ↓
+Find closest / most similar information
+So vector search is about meaning/similarity, not just exact words.
+This is one of the most important ideas from the class.
+23. Where RAG enters the story
+This is where the class is heading.
+The teacher explains that vector databases became especially important after RAG --- Retrieval-Augmented Generation became popular.
+The future flow is roughly:
+Documents
+   ↓
+Chunk documents
+   ↓
+Create embeddings
+   ↓
+Store vectors
+   ↓
+User asks a question
+   ↓
+Create embedding for question
+   ↓
+Search vector DB
+   ↓
+Retrieve relevant information
+   ↓
+LLM
+   ↓
+Generate answer
+So:
+Vector DB becomes an important backbone for knowledge retrieval in RAG systems.
+The class says future sessions will cover RAG, advanced RAG and agentic RAG in more detail.
+24. Qdrant --- the vector database used in class
+The class uses Qdrant as the vector database.
+The setup flow is:
+Qdrant
+ ↓
+Create Cluster
+ ↓
+Create / get API Key
+ ↓
+Get Cluster Endpoint
+ ↓
+Python Client
+ ↓
+Create Collection
+ ↓
+Store vectors
+The teacher asks students to create a free instance and then open the cluster UI.
+The two important connection pieces are:
+1. API Key
+2. Cluster Endpoint / URL
+The endpoint tells the application where the cluster is.
+The API key allows the application to access it.
+25. Qdrant collection
+Just like MongoDB has a collection, Qdrant also uses a collection to hold vector data.
+The class creates a collection for a knowledge base.
+Conceptually:
+Qdrant Cluster
+     ↓
+Collection
+     ↓
+Vector points
+The collection needs to know the vector configuration.
+In the example from the class:
+Vector size/dimension = 3072
+Distance = Cosine
+The exact value comes from the embedding model being used in the class.
+26. What does "3072 dimensions" mean?
+This sounds scary at first, but the idea is simple.
+Suppose the embedding model gives:
+[0.12, -0.45, 0.88, ...]
+There are many numbers in that list.
+If the dimension is 3072, then the vector contains 3072 numerical values.
+Think of it as:
+One sentence
+     ↓
+3072-number representation
+The class uses the Gemini embedding model and discusses a 3072-dimensional vector.
+The key point is:
+The vector dimension must match the configuration expected by the vector database collection.
+27. Why do we need a distance/similarity measure?
+We have two vectors.
+For example:
+Vector A → document
+Vector B → user question
+Now we need to know:
+"How close are these two vectors?"
+This is where similarity/distance calculations come in.
+The class mentions:
+Cosine similarity
+Euclidean distance
+Manhattan distance
+HNSW-related search
+For this class example, cosine similarity is used.
+The mathematical details are intentionally left for the later RAG section.
+So for now, remember only:
+Vector A
+   +
+Vector B
+   ↓
+Similarity calculation
+   ↓
+How close / relevant are they?
+28. Storing data in the vector DB
+The class makes an important point:
+We don't want to store only the vector.
+We also want to keep the original information.
+So conceptually, one stored point contains:
+ID
++
+Vector
++
+Payload / original information
+Example:
+Point(
+    id=1,
+    vector=[...3072 numbers...],
+    payload={
+        "text": "My name is Anshu Kumar..."
+    }
+)
+The payload is where we can keep the original text and other metadata.
+29. Why store both vector and original text?
+Imagine we only stored this:
+[0.12, -0.45, 0.88, ...]
+That is useful for similarity search, but a human cannot directly understand it.
+So we keep:
+Original text
++
+Vector representation
+Then the vector helps us find the relevant item, while the payload gives us the actual information.
+Think:
+Vector → helps FIND
+Payload → helps UNDERSTAND / RETURN
+30. One document becomes one vector
+Suppose we have a document:
+Docker containers package an application
+together with its dependencies.
+The process is:
+Original text
+      ↓
+Embedding model
+      ↓
+Vector
+      ↓
+Qdrant
+At the same time, we keep the original text as payload.
+So the stored point is roughly:
+ID
+Vector
+Text
+Metadata
+31. Multiple documents --- now things get interesting
+The class then takes several pieces of data.
+Imagine:
+Document 1
+Document 2
+Document 3
+Document 4
+Document 5
+For each document:
+Document
+   ↓
+Extract text
+   ↓
+Generate embedding
+   ↓
+Create point
+   ↓
+Store in Qdrant
+The teacher uses a loop to process the documents one by one.
+Conceptually:
+for document in documents:
+    text = document["text"]
+
+    vector = generate_embedding(text)
+
+    create_point(
+        id=...,
+        vector=vector,
+        payload={"text": text}
+    )
+This is the beginning of a real vector-search pipeline.
+32. Why create a generate_embedding() function?
+Instead of writing the embedding API call again and again, the class wraps it in a function.
+Conceptually:
+def generate_embedding(text):
+    response = embedding_model.create(text)
+    return response
+Now the rest of the application can simply say:
+vector = generate_embedding(text)
+This makes the code easier to reuse.
+The important programming idea is:
+Put repeated logic into a function.
+33. The real "aha!" moment --- searching
+Up to this point, we did a lot of setup:
+Create vector
+Store vector
+Store payload
+But the important question is:
+Why are we doing all this?
+Now the class demonstrates the actual value.
+Suppose the user asks:
+"Tell me about MongoDB"
+This is just a normal English question.
+34. Step 1 --- Convert the question into a vector
+The question itself is converted into an embedding.
+"Tell me about MongoDB"
+          ↓
+Embedding model
+          ↓
+Query vector
+Now the query is also represented in the same vector space as the stored documents.
+This is very important.
+We now have:
+Stored document vectors
++
+Query vector
+35. Step 2 --- Search for the nearest vectors
+The application asks Qdrant:
+"Which stored vectors are closest to my query vector?"
+Conceptually:
+Query Vector
+     ↓
+Qdrant
+     ↓
+Compare against stored vectors
+     ↓
+Find nearest vectors
+     ↓
+Return top K results
+The class uses a query operation and asks for a limited number of results.
+36. What is Top-K?
+You may hear this term constantly in RAG interviews.
+Top-K simply means:
+"Give me the best K matching results."
+If:
+K = 3
+then we want:
+Top 3 most relevant results
+If:
+K = 5
+then:
+Top 5 results
+Simple mental model:
+1000 documents
+      ↓
+Search
+      ↓
+Top 5 relevant documents
+37. Score --- how relevant is the result?
+The vector database returns a score with the result.
+The class uses cosine similarity.
+The basic idea:
+Higher similarity
+      ↓
+More relevant / closer
+The class describes cosine similarity scores as being between 0 and 1 for the example.
+Don't worry about the mathematics yet.
+The teacher says the mathematics behind cosine similarity will be explained later during the RAG section.
+For now:
+Score helps us understand how closely a result matches the query.
+38. Example from the class
+Question:
+"Tell me about MongoDB"
+The vector search returns several results.
+The most relevant result is about MongoDB.
+Other results may be somewhat related.
+For example:
+Result 1 → MongoDB information → highest relevance
+Result 2 → Docker information   → lower relevance
+Result 3 → another document     → lower relevance
+This is the beauty of semantic search.
+The system doesn't need the user to write a perfect database keyword query.
+The user can ask naturally.
+39. Traditional search vs vector search --- story version
+Imagine a company has 1000 pages of documents.
+Old approach
+User says:
+"How can I take leave?"
+Keyword search looks for words such as:
+leave
+vacation
+holiday
+Vector approach
+The system converts the question into a vector.
+It searches for documents whose meaning is close to:
+"How can I take leave?"
+Even if the document uses different wording, it may still be retrieved because the semantic meaning is similar.
+That is why vector search is so useful for AI applications.
+40. The complete vector-search story
+This is probably the most important flow to remember from the class:
+DATA INGESTION
+
+Documents
+   ↓
+Read documents
+   ↓
+Break into smaller pieces/chunks
+   ↓
+Generate embeddings
+   ↓
+Store vectors + original text/metadata
+   ↓
+Vector Database
+Then later:
+USER SEARCH
+
+User question
+   ↓
+Generate query embedding
+   ↓
+Search Vector DB
+   ↓
+Similarity calculation
+   ↓
+Top-K relevant chunks
+   ↓
+Return relevant information
+And later, when RAG is introduced:
+User Question
+      ↓
+Vector Search
+      ↓
+Relevant Context
+      ↓
+LLM
+      ↓
+Final Answer
+41. Why chunking was mentioned
+The teacher briefly introduces the idea of chunks.
+Imagine a 1000-page PDF.
+We don't necessarily want to create one giant vector for the entire PDF.
+Instead, we can break it into smaller pieces:
+PDF
+ ↓
+Page / paragraph / smaller text pieces
+ ↓
+Chunk 1
+Chunk 2
+Chunk 3
+...
+ ↓
+Embedding each chunk
+ ↓
+Store in vector DB
+The detailed chunking strategy is planned for the later RAG section.
+So for now:
+Chunk = smaller piece of a large document used for processing/search.
+42. Why vector databases became important for GenAI
+The class connects vector databases strongly with RAG.
+The story is:
+Large company
+     ↓
+Lots of documents
+     ↓
+Need intelligent search
+     ↓
+GenAI / RAG
+     ↓
+Need semantic retrieval
+     ↓
+Vector embeddings
+     ↓
+Vector database
+That's why technologies such as vector databases have become common in GenAI systems.
+The class mentions several examples:
+Qdrant
+FAISS
+ChromaDB
+Pinecone
+Weaviate
+Supabase vector support
+MongoDB vector support
+The main lesson is not to memorize every product.
+The main lesson is:
+Understand the concept. Once you understand vector DB, moving between vector DB products becomes much easier.
+43. One project can use multiple databases
+Another important architecture lesson from the class:
+A real application does not have to use only one database.
+For example, a project might use:
+SQL DB
+   → structured business data
+
+MongoDB
+   → flexible documents
+
+Vector DB
+   → semantic search / RAG
+
+Graph DB
+   → relationships between entities
+So when doing system design, don't automatically think:
+"One application = one database."
+Instead ask:
+"What type of data am I storing, and what kind of operation do I need?"
+Then choose the appropriate database.
+44. MongoDB vs Vector DB --- easiest way to remember
+Question                MongoDB                 Vector DB
+Main idea               Flexible documents      Numerical vectors
+Data style              Document / key-value    Vector + payload
+Great for               Flexible application    Semantic search data
+Search style            Field/filter based      Similarity based
+AI/RAG use              Can store application   Core retrieval data and can support    component vectors
+Example from class      MongoDB                 Qdrant
+Don't think:
+"Vector DB replaces MongoDB."
+Instead think:
+They solve different problems and can work together.
+45. The API Gateway idea from the class
+The class also demonstrates using an API gateway/router for model access.
+The idea is:
+Your Python Application
+        ↓
+API Gateway / Router
+        ↓
+Different AI Models
+Instead of separately integrating every model provider, the gateway provides a common interface.
+The class explains that the models are made compatible with an OpenAI-style interface.
+The important learning point is:
+One common API interface can make it easier for an application to access different models.
+46. Embedding model vs chat model
+This is important.
+An AI application can use different model categories.
+The class mentions categories such as:
+Text generation
+Embedding
+Image generation
+Speech-to-text
+Text-to-speech
+Re-ranking
+Video generation
+Image classification
+For vector search, the important one is:
+Embedding model
+Why?
+Because we need:
+Text → Vector
+A chat model is primarily used to generate responses.
+An embedding model is used to create numerical representations useful for similarity/search.
+47. The complete architecture in one picture
+Keep this in your notebook:
+DOCUMENTS
+                        |
+                        v
+                 Read / Extract
+                        |
+                        v
+                     Chunks
+                        |
+                        v
+                Embedding Model
+                        |
+                        v
+                  Vector + Text
+                        |
+                        v
+                 +--------------+
+                 |  Vector DB   |
+                 |   Qdrant     |
+                 +--------------+
+                        ^
+                        |
+                 Query Embedding
+                        ^
+                        |
+                  User Question
+Later, RAG adds:
+Vector DB
+   ↓
+Relevant Context
+   ↓
+LLM
+   ↓
+Answer
+48. What happened when there was an error?
+The class also shows something very practical:
+Errors are part of development.
+Examples from the session included:
+Duplicate key error
+Model not found
+Wrong argument name
+API key/environment variable issue
+Package/import issue
+Code buffering/kernel issue
+The important practical lesson:
+Don't panic when the code fails. Read the error, identify what it is complaining about, fix that specific thing, and run again.
+The teacher also repeatedly emphasizes doing the tasks yourself because hands-on practice is what builds confidence.
+49. Environment/API key lesson
+For the model API, the class sets an API key through an environment variable.
+Conceptually:
+os.environ["API_KEY"] = "your_key"
+The exact variable name used in the class is part of its specific environment/setup.
+The important security lesson is:
+Do not hard-code real API keys into code that you share publicly.
+Keep keys in environment variables or a secure secret-management system.
+50. What you should actually remember from this class
+Don't try to memorize every line of Python.
+Remember the story.
+MongoDB story
+I need flexible data
+       ↓
+MongoDB
+       ↓
+Database
+       ↓
+Collection
+       ↓
+Documents
+       ↓
+insert / find / update / delete
+Vector DB story
+I have lots of documents
+       ↓
+Break them into chunks
+       ↓
+Embedding model
+       ↓
+Convert text to vectors
+       ↓
+Store vector + original text
+       ↓
+Vector DB
+Search story
+User asks question
+       ↓
+Convert question to vector
+       ↓
+Search vector DB
+       ↓
+Similarity score
+       ↓
+Top-K relevant results
+RAG story
+Question
+   ↓
+Retrieve relevant information
+   ↓
+Give context to LLM
+   ↓
+Generate answer
+51. Interview-friendly explanation
+If an interviewer asks:
+"What is a vector database?"
+A simple answer:
+A vector database stores numerical representations called embeddings and allows us to search for similar vectors. In GenAI applications, we can convert document chunks into embeddings, store them in a vector database, and later convert a user's question into an embedding to retrieve the most relevant documents. This is commonly used as the retrieval part of RAG.
+"Why do we need embeddings?"
+Embeddings convert text or other information into numerical vectors that capture semantic information. Because both documents and queries can be represented in the same vector space, we can compare them using similarity measures and retrieve relevant information.
+"Why MongoDB instead of SQL?"
+MongoDB is a document-based NoSQL database. It is useful when the data structure is flexible and documents may not all have exactly the same fields.
+"What is Top-K?"
+Top-K means retrieving the K most relevant results from the vector search. For example, Top-5 means return the five highest-ranked matching results.
+52. Final mental model
+If you remember only one story from this class, remember this:
+First, we learned that not every application needs only SQL.
+MongoDB gives us a flexible way to store documents.
+Then we moved into the GenAI world.
+AI applications often have huge amounts of documents, and normal keyword search is not enough for semantic questions.
+So we take the documents, break them into smaller chunks, and use an embedding model to turn each chunk into numbers.
+Those numbers are called vectors.
+We store the vectors along with the original text/metadata in a vector database such as Qdrant.
+When a user asks a question, we turn the question into a vector too.
+Then the vector database finds the closest vectors.
+Those closest results are our relevant information.
+And this becomes the foundation for RAG, where the retrieved information is given to an LLM so it can produce a useful answer.
+53. Quick revision sheet
+MongoDB
+--------
+Document-based NoSQL DB
+
+Database
+   ↓
+Collection
+   ↓
+Documents
+
+CRUD:
+Create → insert_one / insert_many
+Read   → find_one / find
+Update → update_one / update_many
+Delete → delete_one / delete_many
+MongoDB operators
+-----------------
+$gt  → greater than
+$lt  → less than
+$eq  → equal
+$gte → greater than or equal
+$lte → less than or equal
+$ne  → not equal
+Vector DB
+---------
+Text
+ ↓
+Embedding model
+ ↓
+Vector
+ ↓
+Vector DB
+Vector search
+-------------
+Question
+ ↓
+Query embedding
+ ↓
+Similarity search
+ ↓
+Top-K results
+RAG
+---
+Question
+ ↓
+Retrieve relevant chunks
+ ↓
+Context
+ ↓
+LLM
+ ↓
+Answer
+54. Practice tasks from this class
+Try these yourself instead of just reading the notes.
+MongoDB
+Create a database.
+Create a collection called students.
+Insert one student.
+Insert multiple students.
+Find one student.
+Find students whose age is greater than 25.
+Find students whose age is less than or equal to 30.
+Find a student by name.
+Update one student's age.
+Update multiple students.
+Delete one student.
+Delete multiple students.
+Vector DB
+Create a Qdrant cluster.
+Get the endpoint.
+Get/create the API key.
+Connect from Python.
+Create a collection.
+Configure the vector dimension.
+Generate an embedding for a sentence.
+Store vector + original text.
+Store multiple documents.
+Convert a user question into an embedding.
+Search the vector DB.
+Retrieve the Top-K results.
+Look at the similarity scores.
+55. One last thing: don't learn this as separate topics
+The topics are connected.
+Think of the learning journey as:
+Python
+  ↓
+API
+  ↓
+Database
+  ↓
+MongoDB
+  ↓
+Embeddings
+  ↓
+Vector Database
+  ↓
+Semantic Search
+  ↓
+RAG
+  ↓
+Advanced RAG
+  ↓
+Agentic RAG
+  ↓
+AI Applications
+So today's vector database lesson is not an isolated database lesson.
+It is the first practical step toward building RAG and GenAI systems.
