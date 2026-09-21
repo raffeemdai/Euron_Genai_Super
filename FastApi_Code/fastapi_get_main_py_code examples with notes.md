@@ -1,7 +1,8 @@
 # FastAPI `main.py`: Code Explanations, Usage, Purpose, Syntax & Memory Tricks
 
 > **File:** `main.py` (Super30 FastAPI GET API): 14 GET endpoints
-> **Tested with:** FastAPI 0.141.1 · Pydantic 2.13.5 · Python 3.12. Every "actual response" below was produced by running your file, not guessed.
+> **Version:** updated for your **latest `main.py`**, in which the `get=0` typo is already fixed to `ge=0`.
+> **Tested with:** FastAPI 0.141.1 · Pydantic 2.13.5 · Python 3.12. Every "actual response" below was produced by running your updated file, not guessed.
 > **Legend:** 🎯 Purpose · 🔍 How it works · 🚀 Usage · 📌 Noting points · ⚠️ Gotcha · 🧠 Memory trick
 
 ---
@@ -13,7 +14,7 @@
 3. [Core concepts you need first](#3-core-concepts)
 4. [Imports & app object](#4-imports--app-object)
 5. [Endpoint-by-endpoint explanations](#5-endpoint-by-endpoint)
-6. [Bugs & improvements found in this file (verified)](#6-bugs--improvements-found)
+6. [Change log, remaining bugs & improvements (verified)](#6-change-log-remaining-bugs--improvements)
 7. [Syntax cheat sheet](#7-syntax-cheat-sheet)
 8. [Memory tricks (master list)](#8-memory-tricks-master-list)
 9. [Endpoint summary table](#9-endpoint-summary-table)
@@ -143,7 +144,7 @@ A `BaseModel` describes data as typed fields; Pydantic **validates** it. `Field(
 | `description=` | shows in Swagger docs | all |
 | `default=` | default value | all |
 
-⚠️ **`get` is NOT a valid argument.** It's a typo for `ge` (see [Section 6](#6-bugs--improvements-found)).
+⚠️ **`get` is NOT a valid argument.** (Your earlier version had this typo; it is now fixed.) The correct name is `ge` (fixed in your latest file, see [Section 6](#6-change-log-remaining-bugs--improvements)).
 
 ## 3.6 `Depends()` with a Pydantic model (class dependency)
 
@@ -345,9 +346,9 @@ GET /skills                          → 422 (skill required)
 
 ```python
 class addition(BaseModel):
-    num1: int = Field(get=0, le=100, description="First number to add")
-    num2: int = Field(get=0, le=100, description="Second number to add")
-    result: int = Field(get=0, le=200, description="Result of addition")
+    num1: int = Field(ge=0, le=100, description="First number to add")
+    num2: int = Field(ge=0, le=100, description="Second number to add")
+    result: int = Field(ge=0, le=200, description="Result of addition")
 
 
 @app.get("/add/{num1}/{num2}", response_model=addition)
@@ -369,19 +370,20 @@ GET /add/10/20   → 200 {"num1":10,"num2":20,"result":30}
 GET /add/abc/1   → 422 (int_parsing error, loc: ["path","num1"])
 ```
 
-⚠️ **Two verified problems:**
+⚠️ **Verified problem: out-of-range input gives 500, not 422** (this got *wider* after the `ge` fix):
 ```
-GET /add/-5/3    → 200 {"num1":-5,"num2":3,"result":-2}   ← negatives allowed!
-GET /add/150/1   → 500 Internal Server Error              ← should be a 422!
+GET /add/150/1   → 500 Internal Server Error    ← should be a 422
+GET /add/-5/3    → 500 Internal Server Error    ← should be a 422 (was 200 before the typo fix)
 ```
-- **Why negatives pass:** `get=0` is a **typo for `ge=0`**, so there's **no lower bound** at all (Pydantic just warns *"Using extra keyword arguments on Field is deprecated… Extra keys: 'get'"*).
-- **Why 150 → 500:** the function args are plain `int` (no limits), so FastAPI accepts 150. Then **your code** builds `addition(num1=150, ...)`; the model's `le=100` rejects it **inside your function** → an unhandled `ValidationError` → 500. Rules on a *response model* only kick in on output, which is a server-side failure.
+- **Why:** the function args are plain `int` (no limits), so FastAPI happily accepts `150` and `-5`. Then **your own code** builds `addition(num1=150, ...)`; the model's rules (`le=100`, and now the working `ge=0`) reject it **inside your function** → an unhandled `ValidationError` → **500**.
+- **What the `ge` fix changed:** before, the broken `get=0` meant negatives *slipped through* (200 with a wrong-but-accepted result). Now the rule is real, but it fires *after* the request was accepted, so negatives **crash with 500**. The typo fix was correct; the endpoint just needs its limits on the **inputs** too (see Section 6, Issue A).
+- Rules on a *response model* only kick in on output, which is a server-side failure.
 
 📌 **Noting points**
-- Constraints on a model do **not** protect the endpoint's *inputs* unless the model is the input (via `Depends()`) or you use `Path(...)`. (Fix in [Section 6](#6-bugs--improvements-found).)
+- Constraints on a model do **not** protect the endpoint's *inputs* unless the model is the input (via `Depends()`) or you use `Path(...)`. (Fix in [Section 6](#6-change-log-remaining-bugs--improvements).)
 - Class named `addition` (lowercase). PEP 8 says classes use **PascalCase** → `Addition`.
 
-🧠 **"Path in `{}` → same name in function."** and **"`ge`, not `get`. 'Greater-Equal', never 'GET request'."**
+🧠 **"Path in `{}` → same name in function."** and **"Limits belong on the way IN, not only on the way OUT."**
 
 ---
 
@@ -389,11 +391,11 @@ GET /add/150/1   → 500 Internal Server Error              ← should be a 422!
 
 ```python
 class result_new(BaseModel):
-    result: int = Field(get=0, le=20000, description="Result of arthmetic operation")
+    result: int = Field(ge=0, le=20000, description="Result of arthmetic operation")
 
 class add_numbers_query(BaseModel):
-    num1: int = Field(get=0, le=100, description="First number to add")
-    num2: int = Field(get=0, le=100, description="Second number to add")
+    num1: int = Field(ge=0, le=100, description="First number to add")
+    num2: int = Field(ge=0, le=100, description="Second number to add")
 
 @app.get("/add_new/{num1}/{num2}", response_model=result_new)
 def add_numbers_new(num1: int, num2: int):
@@ -407,14 +409,14 @@ def add_numbers_new(num1: int, num2: int):
 🚀 **Usage** (verified)
 ```
 GET /add_new/10/20      → 200 {"result":30}
-GET /add_new/-5/3       → 200 {"result":-2}           (typo: no lower bound)
+GET /add_new/-5/3       → 500 Internal Server Error   (result -2 < ge=0; was 200 before the typo fix)
 GET /add_new/20000/5    → 500 Internal Server Error   (result 20005 > le=20000)
 ```
 
 📌 **Noting points**
 - `add_numbers_query` is defined **here but not used by this endpoint**; it's used in the *next* one.
 - "arthmetic" is a typo of "arithmetic" (only in the description text shown in docs).
-- Path params accept any int here (no bound), so huge numbers reach your function and blow up the response model (500).
+- Path params accept any int here (no bound), so huge **or negative** results reach your function and blow up the response model (500). Now that `ge=0` works, `result_new` also rejects any negative sum, so e.g. `/add_new/-5/3` crashes.
 
 🧠 **"Response model = output bouncer."** Bad output → 500 (the server's fault).
 
@@ -443,11 +445,11 @@ def add_numbers_new1( numbers: add_numbers_query = Depends()):
 GET /add_new1?num1=10&num2=20    → 200 {"result":30}
 GET /add_new1?num1=150&num2=1    → 422 "Input should be less than or equal to 100" (loc: query,num1)
 GET /add_new1?num1=1             → 422 num2 missing
-GET /add_new1?num1=-5&num2=1     → 200 {"result":-4}     ← typo `get`: no lower bound
+GET /add_new1?num1=-5&num2=1     → 422 "Input should be greater than or equal to 0" (loc: query,num1)   ← fixed by `ge`
 ```
 
 📌 **Noting points**
-- This is **the right way** to get 422 (client error) for out-of-range input, unlike `/add`.
+- This is **the right way** to get 422 (client error) for out-of-range input, unlike `/add` and `/add_new`. **Both** bounds (`ge=0` and `le=100`) now work here.
 - Swagger `/docs` shows `num1`, `num2` as query inputs with descriptions from `Field(description=...)`.
 - Import placed mid-file: works, but move to the top.
 
@@ -459,8 +461,8 @@ GET /add_new1?num1=-5&num2=1     → 200 {"result":-4}     ← typo `get`: no lo
 
 ```python
 class multiply(BaseModel):
-    num1: int = Field(get=0, le=100, description="First number to multiply")
-    num2: int = Field(get=0, le=100, description="Second number to multiply")
+    num1: int = Field(ge=0, le=100, description="First number to multiply")
+    num2: int = Field(ge=0, le=100, description="Second number to multiply")
 
 @app.get("/multiply/{num1}/{num2}")
 def multiply_numbers(numbers : multiply = Depends()):
@@ -475,7 +477,7 @@ def multiply_numbers(numbers : multiply = Depends()):
 ```
 GET /multiply/5/6      → 200 {"result":30}
 GET /multiply/500/6    → 422 (le=100, loc: path,num1)
-GET /multiply/-1/6     → 200 {"result":-6}     ← typo `get`: negatives slip through
+GET /multiply/-1/6     → 422 "Input should be greater than or equal to 0" (loc: path,num1)   ← fixed by `ge`
 ```
 
 📌 **Noting points**
@@ -511,7 +513,7 @@ def square_number( data: SquareInput = Depends() ):
 ```
 GET /square/9     → 200 {"number":9,"square":81}
 GET /square/101   → 422 "less than or equal to 100"
-GET /square/-1    → 422 "greater than or equal to 0"     ← ge works here because it's spelled correctly
+GET /square/-1    → 422 "greater than or equal to 0"     ← `ge` enforced (this model was always spelled correctly)
 ```
 
 📌 **Noting points**
@@ -716,25 +718,39 @@ GET /number/1001  → 422 (le=1000)
 
 ---
 
-# 6. Bugs & Improvements Found
+# 6. Change Log, Remaining Bugs & Improvements
 
-All items below were confirmed by running the code.
+All behaviour below was confirmed by running your **updated** `main.py`.
 
-## 🐞 Bug 1: `get=0` should be `ge=0` (appears in 8 places)
-
-**Where:** classes `addition`, `result_new`, `add_numbers_query`, `multiply`.
+## ✅ What you fixed: `get=0` → `ge=0` (8 places)
 
 ```python
-num1: int = Field(get=0, le=100, ...)     # ❌ typo
-num1: int = Field(ge=0,  le=100, ...)     # ✅
+num1: int = Field(get=0, le=100, ...)     # ❌ old
+num1: int = Field(ge=0,  le=100, ...)     # ✅ now
 ```
-**Effect:** No lower bound is enforced → negatives accepted (`/add/-5/3` → `-2`, `/multiply/-1/6` → `-6`). Pydantic v2 prints a `PydanticDeprecatedSince20` warning because unknown keyword arguments are deprecated on `Field`. (The later classes `SquareInput`, `EvenoddInput`, etc. spell `ge` correctly, and reject `-1` with 422.)
+Result of the fix (verified):
+- The Pydantic `PydanticDeprecatedSince20` warnings at startup are **gone** (importing the file with warnings-as-errors now succeeds).
+- The `Depends()`-based endpoints now enforce **both** bounds, so negatives get a proper **422**:
+
+| Request | Before fix | After fix |
+|---|---|---|
+| `/add_new1?num1=-5&num2=1` | 200 `{"result":-4}` | **422** (`ge=0`) |
+| `/multiply/-1/6` | 200 `{"result":-6}` | **422** (`ge=0`) |
 
 🧠 **`ge` = "Greater-or-Equal", not the HTTP verb GET.**
 
-## 🐞 Bug 2: `/add/{num1}/{num2}` returns **500** for numbers above 100
+## ⚠️ Side-effect to understand: the fix exposed a **500** on two endpoints
 
-**Cause:** inputs are plain `int`, the limits live only in the response model, which is checked inside your own code → unhandled error.
+| Request | Before fix | After fix |
+|---|---|---|
+| `/add/-5/3` | 200 `{"num1":-5,"num2":3,"result":-2}` | **500** |
+| `/add_new/-5/3` | 200 `{"result":-2}` | **500** |
+| `/add/150/1` | 500 | 500 (unchanged) |
+| `/add_new/20000/5` | 500 | 500 (unchanged) |
+
+**Why:** these two routes take plain `int` path params, so the bad value reaches your function, and the (now working) model rules raise a `ValidationError` inside your code. **Lesson: the typo was hiding a design problem.** Model limits only protect the *output* there.
+
+## 🐞 Issue A (still open): `/add/{num1}/{num2}` and `/add_new/{num1}/{num2}` return 500 for invalid numbers
 
 **Fix:** put the limits on the inputs so FastAPI answers **422**:
 
@@ -742,20 +758,18 @@ num1: int = Field(ge=0,  le=100, ...)     # ✅
 from typing import Annotated
 from fastapi import FastAPI, Path
 
-@app.get("/add/{num1}/{num2}", response_model=Addition)
+@app.get("/add/{num1}/{num2}", response_model=addition)
 def add_numbers(
     num1: Annotated[int, Path(ge=0, le=100)],
     num2: Annotated[int, Path(ge=0, le=100)],
 ):
-    return Addition(num1=num1, num2=num2, result=num1 + num2)
+    return addition(num1=num1, num2=num2, result=num1 + num2)
 ```
-Verified after the fix: `/add/10/20` → 200 · `/add/150/1` → **422** · `/add/-5/3` → **422**.
+Verified: `/add/10/20` → 200 · `/add/150/1` → **422** · `/add/-5/3` → **422**.
 
-## 🐞 Bug 3: `/add_new/{num1}/{num2}` has no input limits
+For `/add_new/...`, either do the same, or switch it to the `Depends()` style already used by `/add_new1` / `/multiply`.
 
-`/add_new/20000/5` → 500 (result 20005 > 20000). Same fix as Bug 2, or switch to the `Depends()` style used by `/add_new1`.
-
-## ⚠️ Issue 4: Unused imports
+## ⚠️ Issue B (still open): Unused imports
 `EmailStr`, `HttpUrl` are never used, and `EmailStr` needs `email-validator` if you *do* use it. Remove them or use them, e.g.:
 
 ```python
@@ -764,10 +778,10 @@ class Contact(BaseModel):
     website: HttpUrl
 ```
 
-## ⚠️ Issue 5: Import in the middle of the file
-`from fastapi import Depends` → move to the top.
+## ⚠️ Issue C (still open): Import in the middle of the file
+`from fastapi import Depends` → move to the top: `from fastapi import FastAPI, Query, Depends`.
 
-## ⚠️ Issue 6: Naming conventions (PEP 8)
+## ⚠️ Issue D (still open): Naming conventions (PEP 8)
 
 | Current | Better |
 |---|---|
@@ -778,7 +792,7 @@ class Contact(BaseModel):
 | `Mentor` (param) | `mentor` |
 | `/add_new`, `/add_new1` | clearer distinct names (e.g. `/add-v2`, `/add-query`) |
 
-## ⚠️ Issue 7: Duplicate model definitions
+## ⚠️ Issue E (still open): Duplicate model definitions
 `addition`, `add_numbers_query`, `multiply` all repeat the same `num1/num2` fields. One shared model works for all:
 
 ```python
@@ -798,11 +812,14 @@ def multiply_numbers(numbers: Annotated[TwoNumbers, Depends()]):
 ```
 Verified: `/multiply/5/6` → `{"result":30}`, `/multiply/-1/6` → 422, `/multiply/500/6` → 422.
 
-## ⚠️ Issue 8: Minor text polish
+## ⚠️ Issue F (still open): `Mentor` capitalized
+`/course` requires `Mentor` exactly; `?mentor=...` → 422 (verified again). Prefer lowercase.
+
+## ⚠️ Issue G (still open): Minor text polish
 - Welcome message has a trailing space (`"...FastAPI "`).
 - `"arthmetic"` → `"arithmetic"`.
 - `AgeInput.num1` holds an *age*; name it `age`.
-- Title says "GET API"; that's accurate, since every route is GET.
+- `/profile/{name}/{age}` accepts a single space as a name (`min_length=1` counts spaces).
 
 ## 💡 Bonus improvements
 - Add `tags=["Math"]` to group endpoints in `/docs`.
@@ -902,10 +919,10 @@ uvicorn main:app --reload
 | 2 | `/student` | query ×3 | – | dict | 422 if any missing |
 | 3 | `/course` | query ×3 + list `topic` | – | dict | `Mentor` case-sensitive |
 | 4 | `/skills` | query list | – | dict | list needs `Query(...)` |
-| 5 | `/add/{num1}/{num2}` | path | ❌ (plain ints) | `addition` | 150 → **500**, −5 allowed |
-| 6 | `/add_new/{num1}/{num2}` | path | ❌ | `result_new` | 20000+5 → **500** |
-| 7 | `/add_new1` | query | `add_numbers_query` | `result_new` | 150 → 422 ✔, −5 allowed |
-| 8 | `/multiply/{num1}/{num2}` | path | `multiply` | `result_new` | 500 → 422 ✔, −1 allowed |
+| 5 | `/add/{num1}/{num2}` | path | ❌ (plain ints) | `addition` | 150 → **500**, −5 → **500** (should be 422) |
+| 6 | `/add_new/{num1}/{num2}` | path | ❌ | `result_new` | 20000+5 → **500**, −5+3 → **500** |
+| 7 | `/add_new1` | query | `add_numbers_query` | `result_new` | 150 → 422 ✔, −5 → 422 ✔ |
+| 8 | `/multiply/{num1}/{num2}` | path | `multiply` | `result_new` | 500 → 422 ✔, −1 → 422 ✔ |
 | 9 | `/square/{num1}` | path | `SquareInput` | `SquareResponse` | 0–100 enforced ✔ |
 | 10 | `/check/{num1}` | path | `EvenoddInput` | `EvenoddResponse` | Even/Odd |
 | 11 | `/age/{num1}` | path | `AgeInput` | `AgeResponse` | Child/Adult/Senior |
@@ -941,11 +958,11 @@ Validates and filters the outgoing data, and documents the response schema in Op
 **Q8. Difference between `ge` and `gt`?**
 `ge` ≥ (inclusive), `gt` > (strict). Same for `le` / `lt`.
 
-**Q9. Why does `/add/150/1` give a 500 in this project?**
-The function args are plain ints (no limits), so 150 is accepted; the response model's `le=100` then fails inside your code, causing an unhandled `ValidationError`. Fix: `Path(ge=0, le=100)` on inputs.
+**Q9. Why does `/add/150/1` (and `/add/-5/3`) give a 500 in this project?**
+The function args are plain ints (no limits), so the values are accepted; the response model's `le=100` / `ge=0` then fail inside your own code, causing an unhandled `ValidationError`. Fix: `Path(ge=0, le=100)` on the inputs so FastAPI returns 422.
 
-**Q10. Is `get=0` valid in `Field`?**
-No. It's a typo for `ge=0`; Pydantic v2 treats it as a deprecated extra keyword and does not enforce any bound.
+**Q10. What happens if you write `Field(get=0)` instead of `Field(ge=0)`?**
+`get` isn't a real constraint. Pydantic v2 treats it as a deprecated extra keyword (prints a warning) and **enforces nothing**, so negatives were accepted. After correcting it to `ge`, the bound is enforced. Note that on endpoints without input validation, this can turn "accepted" into a 500.
 
 **Q11. How do you run a FastAPI app?**
 `uvicorn main:app --reload` (or `fastapi dev main.py`).
@@ -960,7 +977,7 @@ Both work. Use `async def` when awaiting async I/O (DB/HTTP clients); plain `def
 
 # 11. Practice Exercises
 
-1. Fix all `get=0` → `ge=0` and confirm `/add_new1?num1=-5&num2=1` now returns 422.
+1. ✅ *(Done in your latest file)* You fixed `get=0` → `ge=0`. Now confirm `/add_new1?num1=-5&num2=1` returns 422 while `/add/-5/3` returns **500**. Explain why they differ.
 2. Convert `/add` and `/add_new` to use `Path(ge=0, le=100)` so `150` gives 422, not 500.
 3. Make `topic` in `/course` **optional** (default empty list).
 4. Add `GET /divide/{a}/{b}` returning `a / b`; return **400** with a clear message when `b == 0` (`raise HTTPException(status_code=400, detail="Division by zero")`).
@@ -1025,8 +1042,8 @@ def test_square_out_of_range():
 - [ ] I can explain the request → validate → run → response flow
 - [ ] I can tell path params from query params by looking at the route string
 - [ ] I know why `list[str]` needs `Query(...)`
-- [ ] I know `ge/gt/le/lt`, `min_length/max_length`, and that `get` is a typo
+- [ ] I know `ge/gt/le/lt`, `min_length/max_length`, and that `get` is not a valid argument (`ge` is)
 - [ ] I can explain what empty `Depends()` on a Pydantic model does
-- [ ] I know why 422 (client) differs from 500 (server) and how `/add/150/1` gives 500
+- [ ] I know why 422 (client) differs from 500 (server) and how `/add/150/1` and `/add/-5/3` give 500
 - [ ] I can write Input + Response models for a new endpoint
 - [ ] I can run the app and test in `/docs`, curl, and `TestClient`
