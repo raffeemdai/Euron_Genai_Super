@@ -8,10 +8,13 @@ A simple checklist based on the class transcript. Follow the steps in order. You
 2. Visual Studio Code (VS Code) — where you write code.
 3. Python and Jupyter extensions in VS Code — help VS Code run Python and notebooks.
 4. A project folder — keeps your class files organized.
-5. OBS Studio — records your screen, voice, and camera for assignments.
-6. YouTube — uploads assignment videos so you can share the link.
-7. GitHub — creates an account for future code/project work.
-8. Professional/social accounts — LinkedIn, YouTube, and any other platforms required by your class.
+5. Claude Code for VS Code — lets you use Claude as a coding assistant and choose a model.
+6. OBS Studio — records your screen, voice, and optional camera for assignments.
+7. YouTube — uploads assignment videos so you can share the link.
+8. Atrium/course dashboard — where tasks, deadlines, submissions, and feedback are managed.
+9. GitHub — creates an account for future code/project work.
+10. Professional/social accounts — especially LinkedIn and YouTube, as recommended by the trainer.
+11. Optional AI productivity tools — ChatGPT, Gemini, Gamma, and Epic Pen, depending on your needs.
 
 > **Recommended for beginners:** Start with Python + VS Code. Cursor and Google Antigravity are optional alternatives, not required to begin.
 
@@ -111,7 +114,11 @@ From now on, save your class files inside this folder. You can create a separate
 
 ---
 
-## Step 6 — Test Python using a Jupyter notebook
+## Step 6 — Test Python in two ways
+
+The trainer showed two ways to check that Python is working: a Jupyter notebook and a regular `.py` Python file.
+
+### A. Test with a Jupyter notebook
 
 1. In VS Code, open the `Python-Learning` folder.
 2. Create a new file and name it:
@@ -139,6 +146,33 @@ test.ipynb
 
 If you see `2`, the notebook is running successfully.
 
+### B. Test with a regular Python file
+
+1. In VS Code, create a new file named `test.py`.
+2. Enter this code (you can use your own name):
+
+   ```python
+   print("My name is Alex")
+   ```
+
+3. Save the file with `Ctrl + S`.
+4. Open **Terminal → New Terminal**. The trainer also demonstrated `Ctrl + `` (the backtick key) as a terminal shortcut.
+5. Run:
+
+   ```bash
+   python test.py
+   ```
+
+   If your system uses the Windows Python launcher, try:
+
+   ```bash
+   py test.py
+   ```
+
+6. You should see the text printed in the terminal.
+
+If both the notebook test and the `.py` file test work, your basic Python setup is ready.
+
 ### If the notebook does not run
 
 - Make sure Python is installed.
@@ -154,14 +188,83 @@ The trainer mentioned these alternatives:
 
 - **Cursor:** https://www.cursor.com/
 - **Google Antigravity:** https://antigravity.google/
+- **Windsurf:** https://windsurf.com/
 
-They provide a coding-editor experience similar to VS Code, with AI-assisted features.
+They provide AI-assisted coding-editor experiences. The trainer said Python and the Python/Jupyter extensions can be set up in these editors in a similar way to VS Code.
 
-**You do not need to install both.** The trainer said they would use VS Code for class. Start there and try an alternative later only if you want to.
+**You do not need to install all of them.** The trainer said they would use VS Code for class. Start there and try an alternative later only if you want to.
 
 ---
 
-## Step 8 — Install OBS Studio for assignment recordings
+## Step 8 — Install Claude Code and choose a model
+
+The trainer demonstrates **Claude Code for VS Code by Anthropic**. This is the Claude coding assistant extension, not just the regular Claude chat website.
+
+### A. Install the Claude Code extension
+
+1. Open **Visual Studio Code**.
+2. Click the **Extensions** icon on the left. On Windows, you can also press `Ctrl + Shift + X`.
+3. Search for:
+
+   ```text
+   Claude Code
+   ```
+
+4. Find **Claude Code for VS Code** published by **Anthropic**. Check the publisher so you install the official extension.
+5. Click **Install** and wait for it to finish.
+
+### B. Open Claude Code in the terminal
+
+1. Open your project folder in VS Code.
+2. Open the built-in terminal using **Terminal → New Terminal**.
+3. Type this command and press **Enter**:
+
+   ```bash
+   claude
+   ```
+
+4. Claude Code should open in the terminal. If the command is not recognized, check that the extension/setup completed and follow any installation instructions shown by VS Code or Claude Code.
+
+### C. Log in to Claude
+
+1. In Claude Code, type:
+
+   ```text
+   /login
+   ```
+
+2. Press **Enter**.
+3. Follow the prompt. It should open a browser window or provide a sign-in flow.
+4. Sign in to your Anthropic account and approve the requested connection.
+5. Return to VS Code and wait for Claude Code to confirm that you are signed in.
+
+The trainer explains that first-time users need to log in through the browser. Your account must have access to Claude Code; if a plan or payment screen appears, review the options shown to you before choosing one.
+
+### D. Select or change the model
+
+1. In Claude Code, type:
+
+   ```text
+   /model
+   ```
+
+2. Press **Enter**.
+3. Review the models offered in the menu.
+4. Select the model you want to use and confirm the selection if prompted.
+
+The trainer demonstrates changing the selected model with `/model`. The transcript's automatic captions appear to say **Opus, “Fable,” “Sonet,” and Haiku**; some model names may have been misheard by the automatic transcription. Do not rely on those captions as an exact current model list. Choose from the names actually displayed in your own model menu.
+
+**Simple way to remember:**
+
+- `/login` — sign in to your Claude account.
+- `/model` — see the available models and switch the model.
+- `claude` — open Claude Code from the VS Code terminal, as demonstrated in the class.
+
+> **Note:** Some Claude Code features and models depend on your account, plan, and current availability. You do not need to buy multiple AI subscriptions just to follow the basic Python setup.
+
+---
+
+## Step 9 — Install OBS Studio for assignment recordings
 
 **What it does:** OBS Studio records your screen and can also record your microphone and camera. The trainer used it to make videos for class tasks.
 
@@ -211,7 +314,7 @@ They provide a coding-editor experience similar to VS Code, with AI-assisted fea
 
 ---
 
-## Step 9 — Create or sign in to YouTube
+## Step 10 — Create or sign in to YouTube
 
 The trainer said assignment videos should be uploaded to YouTube and the video link submitted.
 
@@ -234,7 +337,7 @@ Follow the course instructions. If the trainer asks for a link that they can ope
 
 ---
 
-## Step 10 — Find the course submission area (Atrium)
+## Step 11 — Find the course submission area (Atrium)
 
 The transcript mentions **Atrium** as part of the task/submission workflow, but it does not provide a confirmed website address or enough detail to describe every click.
 
@@ -248,7 +351,7 @@ Use the exact link provided by your course dashboard or trainer. Do not guess th
 
 ---
 
-## Step 11 — Create a GitHub account
+## Step 12 — Create a GitHub account
 
 **What it does:** GitHub is used to store and share code projects. The trainer said GitHub would be covered in a later class, but suggested creating an account.
 
@@ -260,7 +363,7 @@ Use the exact link provided by your course dashboard or trainer. Do not guess th
 
 ---
 
-## Step 12 — Set up professional/social accounts
+## Step 13 — Set up professional/social accounts
 
 The trainer mentioned these platforms:
 
@@ -282,7 +385,7 @@ Start with the platforms your course specifically requires. The transcript empha
 
 ---
 
-## Step 13 — AI tools mentioned in class (optional)
+## Step 14 — AI tools mentioned in class (optional)
 
 The trainer mentioned using AI assistants to help with learning and coding:
 
@@ -293,6 +396,79 @@ The trainer mentioned using AI assistants to help with learning and coding:
 You can start with an AI tool you already have access to. A paid subscription is **not required just to complete the basic setup** described here. The trainer specifically said you do not need to pay for several tools at once.
 
 Use AI to explain errors, clarify concepts, and review your understanding. Read and test any code before relying on it.
+
+---
+
+## Step 15 — Optional AI tools the trainer demonstrated
+
+These are useful extras, not required for the first Python lesson.
+
+### A. ChatGPT, Claude, and Gemini
+
+The trainer showed AI assistants being used to create prompts, explain ideas, and help prepare content. You can start with an account you already have:
+
+- ChatGPT: https://chatgpt.com/
+- Claude: https://claude.ai/
+- Gemini: https://gemini.google.com/
+
+**Simple workflow:** Explain your goal to the AI assistant, ask it to draft a prompt or plan, review the answer, and verify the result before using it. Do not assume AI output is always correct.
+
+### B. Gamma — create a presentation from a prompt
+
+The trainer demonstrated using ChatGPT to draft a detailed prompt, then pasting that prompt into Gamma to generate a presentation.
+
+1. Visit Gamma: https://gamma.app/
+2. Sign in if required.
+3. Ask an AI assistant to draft a presentation prompt that includes your topic, audience, purpose, key points, project flow, architecture, and preferred slide count.
+4. Review the prompt and correct any missing or incorrect details.
+5. Paste it into Gamma and generate the presentation.
+6. Review every slide, verify facts, and edit the result before sharing it.
+
+Gamma may have free and paid limits. The trainer discussed subscriptions generally but did **not** say every student must buy Gamma or another AI subscription.
+
+### D. Subscription note from the transcript
+
+Around **00:57:12–00:57:35**, the trainer talks about paid subscriptions used by their team, including a **$20 Gemini subscription available through their Google Workspace/G Suite arrangement**, plus other paid tools. The transcript does **not** clearly say that the $20 subscription is Claude Pro or GitHub Copilot. Do not treat the trainer's team's subscriptions as a requirement for students; check the current plan and price directly before paying.
+
+### C. Other tools mentioned (optional)
+
+- **Eraser:** https://www.eraser.io/ — mentioned as another tool in the AI-tool discussion.
+- **Vmake:** https://vmake.ai/ — mentioned in the context of content/video tools.
+- **Epic Pen:** https://epicpen.com/ — a screen-annotation tool the trainer described as free. It can help you draw or write over your screen while explaining something in a recording.
+
+Install these only if you have a real use for them. They are not prerequisites for learning Python.
+
+---
+
+## Step 16 — Improve task submissions and your professional presence
+
+The trainer emphasized consistency and submitting every assigned task.
+
+1. Check the course dashboard for the task and its deadline.
+2. Complete the task.
+3. Record a clear explanation or walkthrough with OBS.
+4. Upload the video to YouTube.
+5. Submit the video link in the course/Atrium task area, following the exact instructions.
+6. Read the feedback you receive and apply it to the next task.
+7. Ask for help in your class group if you are stuck, and help classmates when you can.
+
+### YouTube privacy: public vs. unlisted
+
+The trainer recommends building a visible portfolio, but also explicitly says you do **not** have to make every task video public. An **unlisted** video can be shared with the trainer using its link and generally will not appear in public search. Use the visibility setting required by the course and make sure the trainer can access the video.
+
+### LinkedIn and YouTube first
+
+The trainer's strongest recommendation was to have at least **LinkedIn and YouTube**. X/Twitter and Instagram were discussed, but are not presented as essential for the immediate setup.
+
+The trainer also suggested sharing useful learning updates on LinkedIn regularly (they mentioned once or twice per day). Treat that as advice, not a requirement; prioritize accurate, professional posts and follow any specific course instructions.
+
+---
+
+## What the transcript does not fully specify
+
+- It mentions **Atrium**, but does not give a confirmed website address or a complete click-by-click submission process. Use the link in your course dashboard or from your trainer.
+- It mentions several AI tools and paid plans, but does not establish that every student must purchase a subscription. Do not buy a plan unless you know which tool you need and what access your course requires.
+- The trainer briefly mentions recording vertical videos/Reels and camera/light equipment, but these are optional presentation improvements, not necessary to get the coding environment working.
 
 ---
 
@@ -307,13 +483,19 @@ Tick each item when it is complete.
 - [ ] `Python-Learning` folder created and opened in VS Code
 - [ ] `test.ipynb` created
 - [ ] Selected a Python kernel
-- [ ] Ran `1 + 1` and saw `2`
+- [ ] Ran `1 + 1` in a notebook and saw `2`
+- [ ] Created and ran a simple `test.py` file
+- [ ] Claude Code for VS Code installed (if using Claude Code)
+- [ ] Logged in using `/login` (if using Claude Code)
+- [ ] Selected a model using `/model` (if using Claude Code)
 - [ ] OBS installed
 - [ ] Tested screen recording and microphone audio
 - [ ] YouTube account ready
 - [ ] Know where to submit the task in the course dashboard/Atrium
 - [ ] GitHub account created or signed in
-- [ ] Required professional/social accounts ready
+- [ ] LinkedIn and YouTube accounts ready
+- [ ] Know how to check task deadlines and apply feedback
+- [ ] Optional tools (Gamma/Epic Pen/etc.) installed only if needed
 
 ## Recommended order for your first day
 
